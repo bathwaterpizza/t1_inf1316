@@ -24,5 +24,5 @@ typedef enum {
 } proc_state_t;
 
 typedef struct {
-  // a
+  int app_id;
 } proc_info_t;
