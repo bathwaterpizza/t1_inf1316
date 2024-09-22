@@ -20,9 +20,11 @@ typedef enum {
 typedef enum {
   RUNNING, // Process is actice
   BLOCKED, // Process is waiting for device interrupt
-  PAUSED   // Process is waiting for a timeslice
+  PAUSED,  // Process is waiting for a timeslice
+  FINISHED // Process has finished executing (PC >= APP_MAX_PC)
 } proc_state_t;
 
 typedef struct {
   int app_id;
+  proc_state_t state;
 } proc_info_t;

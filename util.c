@@ -5,9 +5,6 @@
 #include <string.h>
 #include <time.h>
 
-#define MAX_MSG_LEN 1024
-#define LOG_FILE "logs.log"
-
 void write_log(const char *format, ...) {
   FILE *file = fopen(LOG_FILE, "a");
   if (file == NULL) {
