@@ -48,6 +48,9 @@ int main(void) {
     apps[i].state = PAUSED;
   }
 
+  // Wait for all processes to boot
+  sleep(1);
+
   // cleanup
   shmdt(shm);
   shmctl(shm_id, IPC_RMID, NULL);
