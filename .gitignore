@@ -1,3 +1,8 @@
+# Ignore all, then don't ignore files with extensions, and dirs
+*
+!*.*
+!*/
+
 # Ignore all executables
 *.[eE][xX][eE]
 *.out
