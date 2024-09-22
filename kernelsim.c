@@ -16,15 +16,14 @@ int main(void) {
   assert(APP_MAX_PC > 0);
 
   // Allocate shared memory to communicate with apps
-  int shm_id =
-      shmget(IPC_PRIVATE, sizeof(int) * 2 * APP_AMOUNT, IPC_CREAT | S_IRWXU);
+  int shm_id = shmget(IPC_PRIVATE, SHM_SIZE, IPC_CREAT | S_IRWXU);
   if (shm_id < 0) {
     fprintf(stderr, "Shm alloc error\n");
     exit(3);
   }
 
   int *shm = (int *)shmat(shm_id, NULL, 0);
-  memset(shm, 0, sizeof(int) * 2 * APP_AMOUNT);
+  memset(shm, 0, SHM_SIZE);
 
   // Spawn apps
   proc_info_t apps[APP_AMOUNT];
@@ -37,7 +36,7 @@ int main(void) {
     } else if (pid == 0) {
       write_log("App %d booting", i);
 
-      // stuff
+      // exec app program, shm_id as argument
     }
 
     apps[i].app_id = i + 1;
