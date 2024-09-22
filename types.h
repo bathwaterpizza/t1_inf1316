@@ -21,12 +21,18 @@ typedef enum {
 typedef enum {
   RUNNING, // Process is active
   BLOCKED, // Process is waiting for device interrupt
-  PAUSED,  // Process is waiting for a timeslice
+  PAUSED,  // Process is waiting for a SIGCONT
   FINISHED // Process has finished executing (PC >= APP_MAX_PC)
 } proc_state_t;
 
+// Contains information about each application process
 typedef struct {
-  int app_id;
+  int app_id; // Internal app ID, starting from 1
   pid_t app_pid;
-  proc_state_t state;
+  int D1_access_count; // Amount of syscalls to D1
+  int D2_access_count; // Amount of syscalls to D2
+  int read_count;      // Amount of R syscalls
+  int write_count;     // Amount of W syscalls
+  proc_state_t
+      state; // Current state of the process, according to the kernelsim
 } proc_info_t;

@@ -36,11 +36,15 @@ int main(void) {
     } else if (pid == 0) {
       // child
 
-      // exec app program, shm_id and app_id as argument
+      // exec app program, shm_id and app_id (i+1) as argument
     }
 
     apps[i].app_id = i + 1;
     apps[i].app_pid = pid;
+    apps[i].D1_access_count = 0;
+    apps[i].D2_access_count = 0;
+    apps[i].read_count = 0;
+    apps[i].write_count = 0;
     apps[i].state = PAUSED;
   }
 

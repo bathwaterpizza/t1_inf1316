@@ -15,6 +15,8 @@ int main(int argc, char **argv) {
   // Attach to shm
   int *shm = (int *)shmat(shm_id, NULL, 0);
 
+  // Start paused
+
   // cleanup
   shmdt(shm);
   write_log("App %d exiting", app_id);
