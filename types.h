@@ -19,7 +19,7 @@ typedef enum {
 
 // Application process states
 typedef enum {
-  RUNNING, // Process is actice
+  RUNNING, // Process is active
   BLOCKED, // Process is waiting for device interrupt
   PAUSED,  // Process is waiting for a timeslice
   FINISHED // Process has finished executing (PC >= APP_MAX_PC)

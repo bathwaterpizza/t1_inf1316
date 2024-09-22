@@ -34,9 +34,9 @@ int main(void) {
       fprintf(stderr, "Fork error\n");
       exit(2);
     } else if (pid == 0) {
-      write_log("App %d booting", i);
+      // child
 
-      // exec app program, shm_id as argument
+      // exec app program, shm_id and app_id as argument
     }
 
     apps[i].app_id = i + 1;
