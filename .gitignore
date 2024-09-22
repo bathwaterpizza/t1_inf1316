@@ -1,0 +1,13 @@
+# Ignore all executables
+*.[eE][xX][eE]
+*.out
+*.o
+*.bin
+*.app
+
+# Ignore .log files
+*.log
+
+# Ignore Visual Studio Code configuration files and folders
+.vscode/
+*.code-workspace
