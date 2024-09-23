@@ -1,4 +1,6 @@
 #include "cfg.h"
+#include "types.h"
+#include <assert.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,4 +69,24 @@ void write_msg(const char *format, ...) {
 
   va_end(args);
   fclose(file);
+}
+
+int get_app_counter(int *shm, int app_id) {
+  assert(shm != NULL);
+  return *(shm + ((app_id - 1) * 2));
+}
+
+syscall_t get_app_syscall(int *shm, int app_id) {
+  assert(shm != NULL);
+  return *(shm + 1 + ((app_id - 1) * 2));
+}
+
+void set_app_counter(int *shm, int app_id, int value) {
+  assert(shm != NULL);
+  *(shm + ((app_id - 1) * 2)) = value;
+}
+
+void set_app_syscall(int *shm, int app_id, syscall_t call) {
+  assert(shm != NULL);
+  *(shm + 1 + ((app_id - 1) * 2)) = (int)call;
 }

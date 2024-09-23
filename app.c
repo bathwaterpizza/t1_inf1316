@@ -16,13 +16,14 @@ static int counter;
 // Saves state in shm and raises SIGSTOP
 static void handle_kernel_stop(int signum) {
   write_msg("App %d stopped", app_id);
+  // todo
 }
 
 // Called when app receives SIGCONT from kernelsim
 // Restores state from shm
 static void handle_kernel_cont(int signum) {
   write_msg("App %d resumed", app_id);
-  // restore program counter
+  // todo
 }
 
 int main(int argc, char **argv) {
@@ -51,7 +52,12 @@ int main(int argc, char **argv) {
   // Main application loop
   while (counter < APP_MAX_PC) {
     // todo
+    // probably more utils to generate probability of syscall and stuff
+
+    counter++;
   }
+
+  // kernelsim should use SIGCHLD to detect that the app has exited
 
   // cleanup
   shmdt(shm);
