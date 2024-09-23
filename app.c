@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
   counter = 0;
   write_log("App %d booting", app_id);
   assert(app_id >= 0 && app_id <= 5);
-  srand(time(NULL));
+  srand(time(NULL)); // reset seed
 
   // Register signal callbacks
   if (signal(SIGUSR1, handle_kernel_stop) == SIG_ERR) {
@@ -82,12 +82,15 @@ int main(int argc, char **argv) {
 
   // Main application loop
   while (counter < APP_MAX_PC) {
-    // todo
-    // probably more utils to generate probability of syscall and stuff
-    // use rand_syscall() from utils
-    // static syscall function
     usleep((APP_SLEEP_TIME_MS / 2) * 1000);
+
+    if (rand() % 100 < APP_SYSCALL_PROB) {
+      send_syscall(rand_syscall());
+    }
+
     counter++;
+    write_log("App %d counter now %d", app_id, counter);
+
     usleep((APP_SLEEP_TIME_MS / 2) * 1000);
   }
 
