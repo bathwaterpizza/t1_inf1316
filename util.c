@@ -92,5 +92,23 @@ void set_app_syscall(int *shm, int app_id, syscall_t call) {
 }
 
 syscall_t rand_syscall(void) {
-  // todo
+  int r = rand();
+
+  switch (r % 6) {
+  case 0:
+    return SYSCALL_D1_R;
+  case 1:
+    return SYSCALL_D1_W;
+  case 2:
+    return SYSCALL_D1_X;
+  case 3:
+    return SYSCALL_D2_R;
+  case 4:
+    return SYSCALL_D2_W;
+  case 5:
+    return SYSCALL_D2_X;
+  default:
+    fprintf(stderr, "rand_syscall error\n");
+    exit(5);
+  }
 }

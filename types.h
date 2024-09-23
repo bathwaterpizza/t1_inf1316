@@ -41,7 +41,7 @@ typedef struct {
   int D2_access_count; // Amount of syscalls to D2
   int read_count;      // Amount of R syscalls
   int write_count;     // Amount of W syscalls
-  int exec_count;      // AMount of X syscalls
+  int exec_count;      // Amount of X syscalls
   proc_state_t
       state; // Current state of the process, according to the kernelsim
   bool syscall_handled; // Whether kernelsim has already queued the app's
