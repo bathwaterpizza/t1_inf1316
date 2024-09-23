@@ -11,7 +11,13 @@
 #include <unistd.h>
 
 // Whether the kernel is running and reading the interrupt controller pipe
-static bool kernel_running = true;
+static bool kernel_running;
+// Queue for apps waiting on device D1
+static queue_t *D1_app_queue;
+// Queue for apps waiting on device D2
+static queue_t *D2_app_queue;
+// PID of the intersim process
+static pid_t intersim_pid;
 
 // Called when kernelsim receives a syscall from one of the apps
 static void handle_app_syscall(int signum) {
@@ -19,6 +25,8 @@ static void handle_app_syscall(int signum) {
   // here we must set appinfo.syscall_handled to true,
   // and of course check if already syscall_handled when checking all apps for a
   // pending syscall
+
+  // increment proc_info counters accordingly
 
   // when handling, set appinfo.state to blocked,
   // also add app to the correct device queue
@@ -43,6 +51,7 @@ int main(void) {
   assert(APP_AMOUNT >= 3 && APP_AMOUNT <= 5);
   assert(APP_MAX_PC > 0);
   assert(APP_SLEEP_TIME_MS > 0);
+  assert(APP_SYSCALL_PROB >= 0 && APP_SYSCALL_PROB <= 100);
 
   // Register signal handlers
   if (signal(SIGUSR1, handle_app_syscall) == SIG_ERR) {
@@ -63,6 +72,10 @@ int main(void) {
 
   int *shm = (int *)shmat(shm_id, NULL, 0);
   memset(shm, 0, SHM_SIZE);
+
+  // Allocate device waiting queues
+  D1_app_queue = create_queue();
+  D2_app_queue = create_queue();
 
   // Spawn apps
   proc_info_t apps[APP_AMOUNT];
@@ -96,6 +109,7 @@ int main(void) {
 
   // Wait for all processes to boot
   sleep(1);
+  kernel_running = true;
   write_log("Kernel running");
 
   // when receiving D1 or D2 interrupt and popping the process waiting on a
@@ -107,8 +121,11 @@ int main(void) {
   }
 
   // cleanup
+  free_queue(D1_app_queue);
+  free_queue(D2_app_queue);
   shmdt(shm);
   shmctl(shm_id, IPC_RMID, NULL);
   write_log("Kernel finished");
+
   return 0;
 }

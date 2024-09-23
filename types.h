@@ -54,7 +54,7 @@ typedef struct node_t {
   struct node_t *next;
 } node_t;
 
-// Queue of the app_ids waiting for a device
+// Queue of app_ids waiting for device IO
 typedef struct {
   node_t *front;
   node_t *rear;
