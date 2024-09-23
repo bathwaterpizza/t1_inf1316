@@ -22,6 +22,7 @@ static void handle_app_syscall(int signum) {
   //
   // when handling, set appinfo.state to blocked,
   // also add app to the correct device queue
+  // dont forget logging
 }
 
 // Called when an app exits
@@ -30,6 +31,7 @@ static void handle_app_finished(int signum) {
   // set appinfo.state to finished
   // finished apps should not be scheduled, obviously
   // if all apps are finished, set kernel_running to false
+  // dont forget logging
 }
 
 int main(void) {
@@ -89,6 +91,7 @@ int main(void) {
 
   // Wait for all processes to boot
   sleep(1);
+  write_log("Kernel running");
 
   // when receiving D1 or D2 interrupt and popping the process waiting on a
   // syscall from queue, make sure to set appinfo.syscall_handled to false
@@ -101,6 +104,6 @@ int main(void) {
   // cleanup
   shmdt(shm);
   shmctl(shm_id, IPC_RMID, NULL);
-  write_log("Kernel exiting");
+  write_log("Kernel finished");
   return 0;
 }

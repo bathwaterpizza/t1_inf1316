@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
     exit(4);
   }
 
-  // Attach to shm
+  // Attach to kernelsim shm
   shm = (int *)shmat(shm_id, NULL, 0);
 
   // Begin paused
@@ -94,6 +94,6 @@ int main(int argc, char **argv) {
 
   // cleanup
   shmdt(shm);
-  write_log("App %d exiting", app_id);
+  write_log("App %d finished", app_id);
   return 0;
 }
