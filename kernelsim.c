@@ -8,6 +8,7 @@
 #include <string.h>
 #include <sys/shm.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 // Whether the kernel is running and reading the interrupt controller pipe
@@ -20,7 +21,7 @@ static queue_t *D2_app_queue;
 static pid_t intersim_pid;
 
 // Called when kernelsim receives a syscall from one of the apps
-static void handle_app_syscall(int signum) {
+static void handle_app_syscall(int signum, siginfo_t *info, void *context) {
   // todo
   // here we must set appinfo.syscall_handled to true,
   // and of course check if already syscall_handled when checking all apps for a
@@ -35,7 +36,7 @@ static void handle_app_syscall(int signum) {
 }
 
 // Called when an app exits
-static void handle_app_finished(int signum) {
+static void handle_app_finished(int signum, siginfo_t *info, void *context) {
   // todo
   // set appinfo.state to finished
   // finished apps should not be scheduled, obviously
@@ -43,6 +44,17 @@ static void handle_app_finished(int signum) {
   // it says kernelsim is an infinite process though, we'll ask
 
   // dont forget logging
+  int status;
+  pid_t pid;
+
+  while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+    // Propagate error
+    if (status != 0)
+      exit(status);
+    // pid is the PID of the child process that exited
+    // You can now handle the exit of the child process with this PID
+    // For example, you can set its state to finished, log the event, etc.
+  }
 }
 
 int main(void) {
@@ -54,11 +66,17 @@ int main(void) {
   assert(APP_SYSCALL_PROB >= 0 && APP_SYSCALL_PROB <= 100);
 
   // Register signal handlers
-  if (signal(SIGUSR1, handle_app_syscall) == SIG_ERR) {
+  struct sigaction sa_syscall;
+  sa_syscall.sa_flags = SA_SIGINFO;
+  sa_syscall.sa_sigaction = handle_app_syscall;
+  if (sigaction(SIGUSR1, &sa_syscall, NULL) == -1) {
     fprintf(stderr, "Signal error\n");
     exit(4);
   }
-  if (signal(SIGCHLD, handle_app_finished) == SIG_ERR) {
+  struct sigaction sa_finished;
+  sa_finished.sa_flags = SA_SIGINFO;
+  sa_finished.sa_sigaction = handle_app_finished;
+  if (sigaction(SIGCHLD, &sa_finished, NULL) == -1) {
     fprintf(stderr, "Signal error\n");
     exit(4);
   }
@@ -104,16 +122,12 @@ int main(void) {
     apps[i].write_count = 0;
     apps[i].exec_count = 0;
     apps[i].state = PAUSED;
-    apps[i].syscall_handled = false;
   }
 
   // Wait for all processes to boot
   sleep(1);
   kernel_running = true;
   write_log("Kernel running");
-
-  // when receiving D1 or D2 interrupt and popping the process waiting on a
-  // syscall from queue, make sure to set appinfo.syscall_handled to false
 
   // Main loop for reading interrupt pipes
   while (kernel_running) {
