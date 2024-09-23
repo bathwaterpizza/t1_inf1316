@@ -47,3 +47,15 @@ typedef struct {
   bool syscall_handled; // Whether kernelsim has already queued the app's
                         // pending syscall
 } proc_info_t;
+
+// Queue node
+typedef struct node_t {
+  int data;
+  struct node_t *next;
+} node_t;
+
+// Queue of the app_ids waiting for a device
+typedef struct {
+  node_t *front;
+  node_t *rear;
+} queue_t;

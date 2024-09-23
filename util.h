@@ -24,3 +24,15 @@ void set_app_syscall(int *shm, int app_id, syscall_t call);
 
 // Generate a random syscall from options (D1/D2 + R/W/X)
 syscall_t rand_syscall(void);
+
+// Allocates a queue for storing app_ids as ints
+queue_t *create_queue(void);
+
+// Frees a queue
+void free_queue(queue_t *q);
+
+// Enqueues an app_id to the queue
+void enqueue(queue_t *q, int value);
+
+// Dequeues an app_id from the queue
+int dequeue(queue_t *q);
