@@ -79,6 +79,7 @@ int main(void) {
       char app_id_str[10];
       sprintf(shm_id_str, "%d", shm_id);
       sprintf(app_id_str, "%d", i + 1);
+
       execlp("./app", "app", shm_id_str, app_id_str, NULL);
     }
 

@@ -22,5 +22,5 @@ void set_app_counter(int *shm, int app_id, int value);
 // Set syscall request status in shm for the given app_id
 void set_app_syscall(int *shm, int app_id, syscall_t call);
 
-// Generate a random syscall from options (D1/D2, R/W/X)
+// Generate a random syscall from options (D1/D2 + R/W/X)
 syscall_t rand_syscall(void);
