@@ -15,15 +15,15 @@ static int counter;
 // Called when app receives SIGUSR1 from kernelsim
 // Saves state in shm and raises SIGSTOP
 static void handle_kernel_stop(int signum) {
-  write_msg("App %d stopped at counter %d", app_id, counter);
-  // There should be no pending syscalls
   assert(get_app_syscall(shm, app_id) == SYSCALL_NONE);
+
+  write_msg("App %d stopped at counter %d", app_id, counter);
 
   // Save program counter state to shm
   set_app_counter(shm, app_id, counter);
 
   // Wait for continue from kernelsim
-  kill(getpid(), SIGSTOP);
+  raise(SIGSTOP);
 }
 
 // Called when app receives SIGCONT from kernelsim
@@ -37,10 +37,20 @@ static void handle_kernel_cont(int signum) {
   // Restore syscall state from shm
   if (get_app_syscall(shm, app_id) != SYSCALL_NONE) {
     // announce syscall completed and change status to none
-    write_msg("App %d completed syscall: %s", app_id,
+    write_log("App %d completed syscall: %s", app_id,
               SYSCALL_STR[get_app_syscall(shm, app_id)]);
     set_app_syscall(shm, app_id, SYSCALL_NONE);
   }
+}
+
+static void send_syscall(syscall_t call) {
+  // There should be no pending syscalls
+  assert(get_app_syscall(shm, app_id) == SYSCALL_NONE);
+
+  write_log("App %d started syscall: %s", app_id, SYSCALL_STR[call]);
+  // todo
+  // this will change the syscall status, and interrupt parent process
+  // getppid() will give the parent process id
 }
 
 int main(int argc, char **argv) {
@@ -50,7 +60,7 @@ int main(int argc, char **argv) {
   write_log("App %d booting", app_id);
   assert(app_id >= 0 && app_id <= 5);
 
-  // Register signal callback
+  // Register signal callbacks
   if (signal(SIGUSR1, handle_kernel_stop) == SIG_ERR) {
     fprintf(stderr, "Signal error\n");
     exit(4);
@@ -64,7 +74,7 @@ int main(int argc, char **argv) {
   shm = (int *)shmat(shm_id, NULL, 0);
 
   // Begin paused
-  kill(getpid(), SIGSTOP);
+  raise(SIGSTOP);
 
   // Main application loop
   while (counter < APP_MAX_PC) {
