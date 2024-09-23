@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
     }
 
     counter++;
-    write_log("App %d counter now %d", app_id, counter);
+    write_log("App %d counter is now %d", app_id, counter);
 
     usleep((APP_SLEEP_TIME_MS / 2) * 1000);
   }
