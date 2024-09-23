@@ -4,6 +4,7 @@
 
 #define APP_AMOUNT 3  // How many application processes should be created
 #define APP_MAX_PC 10 // Program counter value at which the app process finishes
+#define APP_SLEEP_TIME_MS 1000 // How long should one iteration of each app take
 
 #define APP_SHM_SIZE (sizeof(int) * 2)       // Size of shm for each app process
 #define SHM_SIZE (APP_SHM_SIZE * APP_AMOUNT) // Total size of shm segment

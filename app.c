@@ -43,14 +43,16 @@ static void handle_kernel_cont(int signum) {
   }
 }
 
+// Sends a syscall request to kernelsim
 static void send_syscall(syscall_t call) {
   // There should be no pending syscalls
   assert(get_app_syscall(shm, app_id) == SYSCALL_NONE);
 
   write_log("App %d started syscall: %s", app_id, SYSCALL_STR[call]);
-  // todo
-  // this will change the syscall status, and interrupt parent process
-  // getppid() will give the parent process id
+
+  // Set desired syscall and send request to kernelsim
+  set_app_syscall(shm, app_id, call);
+  kill(getppid(), SIGUSR1);
 }
 
 int main(int argc, char **argv) {
@@ -81,9 +83,9 @@ int main(int argc, char **argv) {
     // todo
     // probably more utils to generate probability of syscall and stuff
     // static syscall function
-    sleep(1);
-
+    usleep((APP_SLEEP_TIME_MS / 2) * 1000);
     counter++;
+    usleep((APP_SLEEP_TIME_MS / 2) * 1000);
   }
 
   // kernelsim should use SIGCHLD to detect that the app has exited

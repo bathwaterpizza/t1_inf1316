@@ -2,6 +2,7 @@
 #include "types.h"
 #include "util.h"
 #include <assert.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,11 +10,31 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+// Whether the kernel is running and reading the interrupt controller pipe
+static bool kernel_running = true;
+
+// Called when kernelsim receives a syscall from one of the apps
+static void handle_app_syscall(int signum) {
+  // todo
+  // here we must set appinfo.syscall_handled to true,
+  // and of course check if already syscall_handled when checking all apps for a
+  // pending syscall
+  //
+  // when handling, set appinfo.state to blocked,
+  // also add app to the correct device queue
+}
+
 int main(void) {
   write_log("Kernel booting");
   // Validate some configs
   assert(APP_AMOUNT >= 3 && APP_AMOUNT <= 5);
   assert(APP_MAX_PC > 0);
+
+  // Register signal handlers
+  if (signal(SIGUSR1, handle_app_syscall) == SIG_ERR) {
+    fprintf(stderr, "Signal error\n");
+    exit(4);
+  }
 
   // Allocate shared memory to communicate with apps
   int shm_id = shmget(IPC_PRIVATE, SHM_SIZE, IPC_CREAT | S_IRWXU);
@@ -50,10 +71,19 @@ int main(void) {
     apps[i].read_count = 0;
     apps[i].write_count = 0;
     apps[i].state = PAUSED;
+    apps[i].syscall_handled = false;
   }
 
   // Wait for all processes to boot
   sleep(1);
+
+  // when receiving D1 or D2 interrupt and popping the process waiting on a
+  // syscall from queue, make sure to set appinfo.syscall_handled to false
+
+  // Main loop for dealing with the interrupt pipes
+  while (kernel_running) {
+    // todo
+  }
 
   // cleanup
   shmdt(shm);
