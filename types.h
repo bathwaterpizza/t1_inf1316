@@ -33,7 +33,8 @@ typedef enum {
 // String description of app process states
 extern const char *PROC_STATE_STR[];
 
-// Contains information about each application process
+// Contains information about each application process.
+// These are all set by kernelsim
 typedef struct {
   int app_id; // Internal app ID, starting from 1
   pid_t app_pid;
@@ -42,8 +43,7 @@ typedef struct {
   int read_count;      // Amount of R syscalls
   int write_count;     // Amount of W syscalls
   int exec_count;      // Amount of X syscalls
-  proc_state_t
-      state; // Current state of the process, according to the kernelsim
+  proc_state_t state;  // Current state of the process
 } proc_info_t;
 
 // Queue node

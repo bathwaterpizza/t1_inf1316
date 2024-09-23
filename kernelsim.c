@@ -9,6 +9,7 @@
 #include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <time.h>
 #include <unistd.h>
 
 // Whether the kernel is running and reading the interrupt controller pipe
@@ -19,9 +20,36 @@ static queue_t *D1_app_queue;
 static queue_t *D2_app_queue;
 // PID of the intersim process
 static pid_t intersim_pid;
+// Array of app info structs
+static proc_info_t apps[APP_AMOUNT];
+
+// Returns the app_id of the child app with the given pid,
+// or -1 if none found
+static int pid_to_appid(int pid) {
+  for (int i = 0; i < APP_AMOUNT; i++) {
+    if (apps[i].app_pid == pid) {
+      return apps[i].app_id;
+    }
+  }
+
+  return -1;
+}
+
+// Returns whether all apps have finished executing
+static bool all_apps_finished(void) {
+  for (int i = 0; i < APP_AMOUNT; i++) {
+    if (apps[i].state != FINISHED) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 // Called when kernelsim receives a syscall from one of the apps
 static void handle_app_syscall(int signum, siginfo_t *info, void *context) {
+  int app_id = pid_to_appid(info->si_pid);
+  int app_index = app_id - 1;
   // todo
   // here we must set appinfo.syscall_handled to true,
   // and of course check if already syscall_handled when checking all apps for a
@@ -37,23 +65,16 @@ static void handle_app_syscall(int signum, siginfo_t *info, void *context) {
 
 // Called when an app exits
 static void handle_app_finished(int signum, siginfo_t *info, void *context) {
-  // todo
-  // set appinfo.state to finished
-  // finished apps should not be scheduled, obviously
-  // if all apps are finished, set kernel_running to false?
-  // it says kernelsim is an infinite process though, we'll ask
+  int app_id = pid_to_appid(info->si_pid);
+  int app_index = app_id - 1;
 
-  // dont forget logging
-  int status;
-  pid_t pid;
+  apps[app_index].state = FINISHED;
 
-  while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-    // Propagate error
-    if (status != 0)
-      exit(status);
-    // pid is the PID of the child process that exited
-    // You can now handle the exit of the child process with this PID
-    // For example, you can set its state to finished, log the event, etc.
+  if (all_apps_finished()) {
+    // kill intersim and stop reading the pipe
+    write_msg("All apps finished, stopping kernel");
+    kernel_running = false;
+    kill(intersim_pid, SIGTERM);
   }
 }
 
@@ -64,6 +85,8 @@ int main(void) {
   assert(APP_MAX_PC > 0);
   assert(APP_SLEEP_TIME_MS > 0);
   assert(APP_SYSCALL_PROB >= 0 && APP_SYSCALL_PROB <= 100);
+
+  srand(time(NULL));
 
   // Register signal handlers
   struct sigaction sa_syscall;
@@ -96,8 +119,6 @@ int main(void) {
   D2_app_queue = create_queue();
 
   // Spawn apps
-  proc_info_t apps[APP_AMOUNT];
-
   for (int i = 0; i < APP_AMOUNT; i++) {
     pid_t pid = fork();
     if (pid < 0) {
