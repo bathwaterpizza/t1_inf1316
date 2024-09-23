@@ -15,15 +15,32 @@ static int counter;
 // Called when app receives SIGUSR1 from kernelsim
 // Saves state in shm and raises SIGSTOP
 static void handle_kernel_stop(int signum) {
-  write_msg("App %d stopped", app_id);
-  // todo
+  write_msg("App %d stopped at counter %d", app_id, counter);
+  // There should be no pending syscalls
+  assert(get_app_syscall(shm, app_id) == SYSCALL_NONE);
+
+  // Save program counter state to shm
+  set_app_counter(shm, app_id, counter);
+
+  // Wait for continue from kernelsim
+  kill(getpid(), SIGSTOP);
 }
 
 // Called when app receives SIGCONT from kernelsim
 // Restores state from shm
 static void handle_kernel_cont(int signum) {
-  write_msg("App %d resumed", app_id);
-  // todo
+  write_msg("App %d resumed at counter %d", app_id, counter);
+
+  // Restore program counter state from shm
+  counter = get_app_counter(shm, app_id);
+
+  // Restore syscall state from shm
+  if (get_app_syscall(shm, app_id) != SYSCALL_NONE) {
+    // announce syscall completed and change status to none
+    write_msg("App %d completed syscall: %s", app_id,
+              SYSCALL_STR[get_app_syscall(shm, app_id)]);
+    set_app_syscall(shm, app_id, SYSCALL_NONE);
+  }
 }
 
 int main(int argc, char **argv) {
@@ -46,13 +63,15 @@ int main(int argc, char **argv) {
   // Attach to shm
   shm = (int *)shmat(shm_id, NULL, 0);
 
-  // Start paused
+  // Begin paused
   kill(getpid(), SIGSTOP);
 
   // Main application loop
   while (counter < APP_MAX_PC) {
     // todo
     // probably more utils to generate probability of syscall and stuff
+    // static syscall function
+    sleep(1);
 
     counter++;
   }

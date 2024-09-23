@@ -18,6 +18,9 @@ typedef enum {
   SYSCALL_D2_W  // Write to device D2
 } syscall_t;
 
+// String version of the syscalls
+extern const char *SYSCALL_STR[];
+
 // Application process states
 typedef enum {
   RUNNING, // Process is active
