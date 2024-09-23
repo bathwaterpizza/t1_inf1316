@@ -39,6 +39,7 @@ int main(void) {
   // Validate some configs
   assert(APP_AMOUNT >= 3 && APP_AMOUNT <= 5);
   assert(APP_MAX_PC > 0);
+  assert(APP_SLEEP_TIME_MS > 0);
 
   // Register signal handlers
   if (signal(SIGUSR1, handle_app_syscall) == SIG_ERR) {

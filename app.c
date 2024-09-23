@@ -84,6 +84,7 @@ int main(int argc, char **argv) {
   while (counter < APP_MAX_PC) {
     // todo
     // probably more utils to generate probability of syscall and stuff
+    // use random_syscall() from utils
     // static syscall function
     usleep((APP_SLEEP_TIME_MS / 2) * 1000);
     counter++;
