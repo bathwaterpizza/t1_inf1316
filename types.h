@@ -15,11 +15,13 @@ typedef enum {
   SYSCALL_NONE, // No syscall requested
   SYSCALL_D1_R, // Read from device D1
   SYSCALL_D1_W, // Write to device D1
+  SYSCALL_D1_X, // Execute on device D1
   SYSCALL_D2_R, // Read from device D2
-  SYSCALL_D2_W  // Write to device D2
+  SYSCALL_D2_W, // Write to device D2
+  SYSCALL_D2_X  // Execute on device D2
 } syscall_t;
 
-// String version of the syscalls
+// String description of the syscalls
 extern const char *SYSCALL_STR[];
 
 // Application process states
@@ -38,6 +40,7 @@ typedef struct {
   int D2_access_count; // Amount of syscalls to D2
   int read_count;      // Amount of R syscalls
   int write_count;     // Amount of W syscalls
+  int exec_count;      // AMount of X syscalls
   proc_state_t
       state; // Current state of the process, according to the kernelsim
   bool syscall_handled; // Whether kernelsim is aware of the app's pending

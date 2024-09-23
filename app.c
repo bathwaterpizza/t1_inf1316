@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/shm.h>
+#include <time.h>
 #include <unistd.h>
 
 static int *shm;
@@ -61,6 +62,7 @@ int main(int argc, char **argv) {
   counter = 0;
   write_log("App %d booting", app_id);
   assert(app_id >= 0 && app_id <= 5);
+  srand(time(NULL));
 
   // Register signal callbacks
   if (signal(SIGUSR1, handle_kernel_stop) == SIG_ERR) {

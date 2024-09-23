@@ -24,6 +24,14 @@ static void handle_app_syscall(int signum) {
   // also add app to the correct device queue
 }
 
+// Called when an app exits
+static void handle_app_finished(int signum) {
+  // todo
+  // set appinfo.state to finished
+  // finished apps should not be scheduled, obviously
+  // if all apps are finished, set kernel_running to false
+}
+
 int main(void) {
   write_log("Kernel booting");
   // Validate some configs
@@ -32,6 +40,10 @@ int main(void) {
 
   // Register signal handlers
   if (signal(SIGUSR1, handle_app_syscall) == SIG_ERR) {
+    fprintf(stderr, "Signal error\n");
+    exit(4);
+  }
+  if (signal(SIGCHLD, handle_app_finished) == SIG_ERR) {
     fprintf(stderr, "Signal error\n");
     exit(4);
   }
@@ -70,6 +82,7 @@ int main(void) {
     apps[i].D2_access_count = 0;
     apps[i].read_count = 0;
     apps[i].write_count = 0;
+    apps[i].exec_count = 0;
     apps[i].state = PAUSED;
     apps[i].syscall_handled = false;
   }
@@ -80,7 +93,7 @@ int main(void) {
   // when receiving D1 or D2 interrupt and popping the process waiting on a
   // syscall from queue, make sure to set appinfo.syscall_handled to false
 
-  // Main loop for dealing with the interrupt pipes
+  // Main loop for reading interrupt pipes
   while (kernel_running) {
     // todo
   }
