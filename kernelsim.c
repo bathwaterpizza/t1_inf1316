@@ -22,6 +22,8 @@ static queue_t *D2_app_queue;
 static pid_t intersim_pid;
 // Array of app info structs
 static proc_info_t apps[APP_AMOUNT];
+// Shared memory segment between apps and kernel
+static int *shm;
 
 // Returns the app_id of the child app with the given pid,
 // or -1 if none found
@@ -46,27 +48,68 @@ static bool all_apps_finished(void) {
   return true;
 }
 
+// Updates the stats of an app according to the syscall type
+static void update_app_stats(syscall_t call, int app_index) {
+  switch (call) {
+  case SYSCALL_D1_R:
+    apps[app_index].D1_access_count++;
+    apps[app_index].read_count++;
+    break;
+  case SYSCALL_D1_W:
+    apps[app_index].D1_access_count++;
+    apps[app_index].write_count++;
+    break;
+  case SYSCALL_D1_X:
+    apps[app_index].D1_access_count++;
+    apps[app_index].exec_count++;
+    break;
+  case SYSCALL_D2_R:
+    apps[app_index].D2_access_count++;
+    apps[app_index].read_count++;
+    break;
+  case SYSCALL_D2_W:
+    apps[app_index].D2_access_count++;
+    apps[app_index].write_count++;
+    break;
+  case SYSCALL_D2_X:
+    apps[app_index].D2_access_count++;
+    apps[app_index].exec_count++;
+    break;
+  default:
+    fprintf(stderr, "update_app_stats error\n");
+    exit(7);
+  }
+}
+
 // Called when kernelsim receives a syscall from one of the apps
 static void handle_app_syscall(int signum, siginfo_t *info, void *context) {
   int app_id = pid_to_appid(info->si_pid);
   int app_index = app_id - 1;
-  // todo
-  // here we must set appinfo.syscall_handled to true,
-  // and of course check if already syscall_handled when checking all apps for a
-  // pending syscall
+  syscall_t call = get_app_syscall(shm, app_id);
 
-  // increment proc_info counters accordingly
+  assert(apps[app_index].state == RUNNING);
+  assert(call != SYSCALL_NONE);
 
-  // when handling, set appinfo.state to blocked,
-  // also add app to the correct device queue
+  // send signal to save app context, then it'll sigstop itself
+  kill(info->si_pid, SIGUSR1);
+  apps[app_index].state = BLOCKED;
+  write_log("App %d blocked for syscall %s", app_id, SYSCALL_STR[call]);
 
-  // dont forget logging
+  update_app_stats(call, app_index);
+
+  if (call >= SYSCALL_D1_R && call <= SYSCALL_D1_X) {
+    enqueue(D1_app_queue, app_id);
+  } else {
+    enqueue(D2_app_queue, app_id);
+  }
 }
 
 // Called when an app exits
 static void handle_app_finished(int signum, siginfo_t *info, void *context) {
   int app_id = pid_to_appid(info->si_pid);
   int app_index = app_id - 1;
+
+  assert(apps[app_index].state == RUNNING);
 
   apps[app_index].state = FINISHED;
 
@@ -111,7 +154,7 @@ int main(void) {
     exit(3);
   }
 
-  int *shm = (int *)shmat(shm_id, NULL, 0);
+  shm = (int *)shmat(shm_id, NULL, 0);
   memset(shm, 0, SHM_SIZE);
 
   // Allocate device waiting queues

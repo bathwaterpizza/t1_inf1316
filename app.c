@@ -94,6 +94,9 @@ int main(int argc, char **argv) {
     usleep((APP_SLEEP_TIME_MS / 2) * 1000);
   }
 
+  // update context before exiting
+  set_app_counter(shm, app_id, counter);
+
   // cleanup
   shmdt(shm);
   write_log("App %d finished", app_id);
