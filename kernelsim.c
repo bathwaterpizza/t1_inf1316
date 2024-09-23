@@ -36,7 +36,11 @@ int main(void) {
     } else if (pid == 0) {
       // child
 
-      // exec app program, shm_id and app_id (i+1) as argument
+      char shm_id_str[10];
+      char app_id_str[10];
+      sprintf(shm_id_str, "%d", shm_id);
+      sprintf(app_id_str, "%d", i + 1);
+      execlp("./app", "app", shm_id_str, app_id_str, NULL);
     }
 
     apps[i].app_id = i + 1;
