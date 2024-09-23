@@ -91,6 +91,6 @@ void set_app_syscall(int *shm, int app_id, syscall_t call) {
   *(shm + 1 + ((app_id - 1) * 2)) = (int)call;
 }
 
-syscall_t random_syscall(void) {
+syscall_t rand_syscall(void) {
   // todo
 }

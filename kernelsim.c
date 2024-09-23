@@ -19,9 +19,10 @@ static void handle_app_syscall(int signum) {
   // here we must set appinfo.syscall_handled to true,
   // and of course check if already syscall_handled when checking all apps for a
   // pending syscall
-  //
+
   // when handling, set appinfo.state to blocked,
   // also add app to the correct device queue
+
   // dont forget logging
 }
 
@@ -30,7 +31,9 @@ static void handle_app_finished(int signum) {
   // todo
   // set appinfo.state to finished
   // finished apps should not be scheduled, obviously
-  // if all apps are finished, set kernel_running to false
+  // if all apps are finished, set kernel_running to false?
+  // it says kernelsim is an infinite process though, we'll ask
+
   // dont forget logging
 }
 

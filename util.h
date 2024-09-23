@@ -23,4 +23,4 @@ void set_app_counter(int *shm, int app_id, int value);
 void set_app_syscall(int *shm, int app_id, syscall_t call);
 
 // Generate a random syscall from options (D1/D2, R/W/X)
-syscall_t random_syscall(void);
+syscall_t rand_syscall(void);
