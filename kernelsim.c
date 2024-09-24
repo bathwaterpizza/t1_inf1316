@@ -211,17 +211,30 @@ int main(void) {
     apps[i].state = PAUSED;
   }
 
-  // Wait for all app processes to boot
+  // Create interrupts pipe
+  int interpipe_fd[2];
+  if (pipe(interpipe_fd) == -1) {
+    fprintf(stderr, "Pipe error\n");
+    exit(8);
+  }
+
+  // Spawn intersim
+  // TODO: also pass the pipe fds to it as argvs
+
+  close(interpipe_fd[PIPE_WRITE]); // close write
+
+  // Wait for all app processes to boot, start intersim
   sleep(1);
   kernel_running = true;
   write_log("Kernel running");
+  kill(intersim_pid, SIGCONT);
 
   // Main loop for reading interrupt pipes
   while (kernel_running) {
     // TODO: read pipes, schedule apps
   }
 
-  // cleanup
+  // Cleanup
   free_queue(D1_app_queue);
   free_queue(D2_app_queue);
   shmdt(shm);
