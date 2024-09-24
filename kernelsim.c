@@ -24,6 +24,9 @@ static pid_t intersim_pid;
 static proc_info_t apps[APP_AMOUNT];
 // Shared memory segment between apps and kernel
 static int *shm;
+// Represents the index of the next app to continue execution, upon receiving a
+// timeslice interrupt. Its value cycles through the apps[] array
+static int schedule_next_app_index = 1;
 
 // Returns the app_id of the child app with the given pid,
 // or -1 if none found
@@ -46,6 +49,17 @@ static bool all_apps_finished(void) {
   }
 
   return true;
+}
+
+// Returns the appid of the current running app
+static int get_running_appid(void) {
+  for (int i = 0; i < APP_AMOUNT; i++) {
+    if (apps[i].state == RUNNING) {
+      return apps[i].app_id;
+    }
+  }
+
+  return -1;
 }
 
 // Updates the stats of an app according to the syscall type
@@ -136,6 +150,31 @@ static void handle_sigint(int signum) {
 
   // and exit from main
   kernel_running = false;
+}
+
+// Stops the current app and looks for the next available one to continue
+static void schedule_next_app(void) {
+  if (all_apps_finished()) {
+    // kill intersim and stop the pipe reading loop
+    write_msg("All apps finished, stopping kernel");
+    kernel_running = false;
+    kill(intersim_pid, SIGTERM);
+    return;
+  }
+  // stop current app
+  int current_app_id = get_running_appid();
+  assert(current_app_id != -1);
+
+  kill(apps[current_app_id - 1].app_pid, SIGUSR1);
+  apps[current_app_id - 1].state = PAUSED;
+
+  // continue next available app
+
+  // loop through all apps once, starting from the last, checking if they can be
+  // continued
+
+  // dont forget logs
+  write_msg("Kernel scheduler switched app %d for %d", current_app_id, -1);
 }
 
 int main(void) {
@@ -241,6 +280,10 @@ int main(void) {
   write_log("Kernel running");
   kill(intersim_pid, SIGCONT);
 
+  // Start first app process manually
+  apps[0].state = RUNNING;
+  kill(apps[0].app_pid, SIGCONT);
+
   // Main loop for reading interrupt pipes
   while (kernel_running) {
     irq_t irq;
@@ -248,7 +291,8 @@ int main(void) {
 
     if (irq == IRQ_TIME) {
       write_log("Kernel received timeslice interrupt");
-      // TODO: schedule another app
+
+      schedule_next_app();
     } else {
       assert(irq == IRQ_D1 || irq == IRQ_D2);
       write_log("Kernel received device interrupt D%d", irq);
@@ -262,6 +306,8 @@ int main(void) {
 
       assert(apps[app_id - 1].state == BLOCKED);
       apps[app_id - 1].state = PAUSED;
+
+      write_log("Kernel unblocked app %d", app_id);
     }
   }
 

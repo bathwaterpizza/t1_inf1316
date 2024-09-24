@@ -11,7 +11,7 @@
 
 static int *shm;
 static int app_id;
-static int counter;
+static int counter = 0;
 
 // Called when app receives SIGUSR1 from kernelsim
 // Saves state in shm and raises SIGSTOP
@@ -67,7 +67,6 @@ static void send_syscall(syscall_t call) {
 int main(int argc, char **argv) {
   int shm_id = atoi(argv[1]);
   app_id = atoi(argv[2]);
-  counter = 0;
   write_log("App %d booting", app_id);
   assert(app_id >= 0 && app_id <= 5);
   assert(argc == 3);
