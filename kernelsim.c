@@ -136,11 +136,12 @@ static void handle_app_finished(int signum, siginfo_t *info, void *context) {
   int app_id = pid_to_appid(info->si_pid);
   int app_index = app_id - 1;
 
+  write_log("Kernel got finished app %d with status %d", app_id,
+            info->si_status);
+
   assert(apps[app_index].state == RUNNING);
 
   apps[app_index].state = FINISHED;
-
-  write_log("Kernel finished app %d", app_id);
 
   if (all_apps_finished()) {
     // kill intersim and stop the pipe reading loop
