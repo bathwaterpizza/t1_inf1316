@@ -51,6 +51,19 @@ static bool all_apps_finished(void) {
   return true;
 }
 
+// Returns how many apps have finished so far
+static int get_amount_finished(void) {
+  int count = 0;
+
+  for (int i = 0; i < APP_AMOUNT; i++) {
+    if (apps[i].state == FINISHED) {
+      count++;
+    }
+  }
+
+  return count;
+}
+
 // Returns the appid of the current running app
 static int get_running_appid(void) {
   for (int i = 0; i < APP_AMOUNT; i++) {
@@ -127,6 +140,8 @@ static void handle_app_finished(int signum, siginfo_t *info, void *context) {
 
   apps[app_index].state = FINISHED;
 
+  write_log("Kernel finished app %d", app_id);
+
   if (all_apps_finished()) {
     // kill intersim and stop the pipe reading loop
     write_msg("All apps finished, stopping kernel");
@@ -161,12 +176,16 @@ static void schedule_next_app(void) {
     kill(intersim_pid, SIGTERM);
     return;
   }
-  // stop current app
+  // stop current app if there is one, and if it isn't the last one
   int current_app_id = get_running_appid();
-  assert(current_app_id != -1);
 
-  kill(apps[current_app_id - 1].app_pid, SIGUSR1);
-  apps[current_app_id - 1].state = PAUSED;
+  if (current_app_id != -1 && (get_amount_finished() < (APP_AMOUNT - 1))) {
+    kill(apps[current_app_id - 1].app_pid, SIGUSR1);
+    apps[current_app_id - 1].state = PAUSED;
+    write_msg("Kernel scheduler stopped app %d", current_app_id);
+  } else {
+    write_log("Kernel scheduler found no app to stop");
+  }
 
   // continue next available app
   for (int i = 0; i < APP_AMOUNT; i++) {
@@ -175,20 +194,27 @@ static void schedule_next_app(void) {
     assert(apps[schedule_next_app_index].state !=
            RUNNING); // no apps should be running at this point
 
+    // Don't continue the app we just stopped
+    if (schedule_next_app_index == (current_app_id - 1))
+      continue;
+
     if (apps[schedule_next_app_index].state == PAUSED) {
       // found app ready to be continued
       kill(apps[schedule_next_app_index].app_pid, SIGCONT);
       apps[schedule_next_app_index].state = RUNNING;
 
-      write_msg("Kernel scheduler switched app %d for %d", current_app_id,
+      write_msg("Kernel scheduler continued app %d",
                 apps[schedule_next_app_index].app_id);
 
       schedule_next_app_index = (schedule_next_app_index + 1) % APP_AMOUNT;
-      break;
+      return;
     }
 
     schedule_next_app_index = (schedule_next_app_index + 1) % APP_AMOUNT;
   }
+
+  // If we get here, it means there was no app to continue
+  write_log("Kernel scheduler found no paused apps to continue");
 }
 
 int main(void) {

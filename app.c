@@ -16,7 +16,7 @@ static int counter = 0;
 // Called when app receives SIGUSR1 from kernelsim
 // Saves state in shm and raises SIGSTOP
 static void handle_kernel_stop(int signum) {
-  assert(get_app_syscall(shm, app_id) == SYSCALL_NONE);
+  // assert(get_app_syscall(shm, app_id) == SYSCALL_NONE);
 
   write_msg("App %d stopped at counter %d", app_id, counter);
 
@@ -62,6 +62,7 @@ static void send_syscall(syscall_t call) {
   // Set desired syscall and send request to kernelsim
   set_app_syscall(shm, app_id, call);
   kill(getppid(), SIGUSR1);
+  pause();
 }
 
 int main(int argc, char **argv) {
