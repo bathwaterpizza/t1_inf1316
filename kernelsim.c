@@ -244,7 +244,15 @@ int main(void) {
 
   // Main loop for reading interrupt pipes
   while (kernel_running) {
-    // TODO: read pipes, schedule apps
+    irq_t irq;
+    read(interpipe_fd[PIPE_READ], &irq, sizeof(irq_t));
+
+    if (irq == IRQ_TIME) {
+      // schedule another app
+    } else {
+      assert(irq == IRQ_D1 || irq == IRQ_D2);
+      // dequeue and remove blocked state
+    }
   }
 
   // Cleanup

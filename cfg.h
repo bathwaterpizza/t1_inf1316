@@ -8,6 +8,14 @@
 #define APP_SYSCALL_PROB                                                       \
   15 // Percentage chance of app sending a syscall for each iteration
 
+#define INTERSIM_SLEEP_TIME_MS 500 // How long to generate an interrupt
+#define INTERSIM_D1_INT_PROB                                                   \
+  10 // Percentage chance of generating a D1 interrupt for each intersim
+     // iteration
+#define INTERSIM_D2_INT_PROB                                                   \
+  5 // Percentage chance of generating a D2 interrupt for each intersim
+    // iteration
+
 #define APP_SHM_SIZE (sizeof(int) * 2)       // Size of shm for each app process
 #define SHM_SIZE (APP_SHM_SIZE * APP_AMOUNT) // Total size of shm segment
 
