@@ -114,7 +114,7 @@ static void handle_app_finished(int signum, siginfo_t *info, void *context) {
   apps[app_index].state = FINISHED;
 
   if (all_apps_finished()) {
-    // kill intersim and stop reading the pipe
+    // kill intersim and stop the pipe reading loop
     write_msg("All apps finished, stopping kernel");
     kernel_running = false;
     kill(intersim_pid, SIGTERM);
@@ -133,6 +133,7 @@ int main(void) {
 
   // Register signal handlers
   struct sigaction sa_syscall;
+  // This flag lets us receive the child pid
   sa_syscall.sa_flags = SA_SIGINFO;
   sa_syscall.sa_sigaction = handle_app_syscall;
   if (sigaction(SIGUSR1, &sa_syscall, NULL) == -1) {
@@ -140,7 +141,8 @@ int main(void) {
     exit(4);
   }
   struct sigaction sa_finished;
-  sa_finished.sa_flags = SA_SIGINFO;
+  // Don't call SIGCHLD for SIGSTOPs, only when it actually terminates
+  sa_finished.sa_flags = SA_SIGINFO | SA_NOCLDSTOP;
   sa_finished.sa_sigaction = handle_app_finished;
   if (sigaction(SIGCHLD, &sa_finished, NULL) == -1) {
     fprintf(stderr, "Signal error\n");
