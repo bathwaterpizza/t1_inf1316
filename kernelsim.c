@@ -139,14 +139,13 @@ static void handle_sigint(int signum) {
 }
 
 int main(void) {
+  srand(time(NULL));
   write_log("Kernel booting");
   // Validate some configs
   assert(APP_AMOUNT >= 3 && APP_AMOUNT <= 5);
   assert(APP_MAX_PC > 0);
   assert(APP_SLEEP_TIME_MS > 0);
   assert(APP_SYSCALL_PROB >= 0 && APP_SYSCALL_PROB <= 100);
-
-  srand(time(NULL));
 
   // Register signal handlers
   struct sigaction sa_syscall;
@@ -248,10 +247,21 @@ int main(void) {
     read(interpipe_fd[PIPE_READ], &irq, sizeof(irq_t));
 
     if (irq == IRQ_TIME) {
-      // schedule another app
+      write_log("Kernel received timeslice interrupt");
+      // TODO: schedule another app
     } else {
       assert(irq == IRQ_D1 || irq == IRQ_D2);
-      // dequeue and remove blocked state
+      write_log("Kernel received device interrupt D%d", irq);
+
+      // Dequeue app and change its blocked state
+      int app_id =
+          (irq == IRQ_D1) ? dequeue(D1_app_queue) : dequeue(D2_app_queue);
+
+      if (app_id == -1)
+        continue; // queue is empty
+
+      assert(apps[app_id - 1].state == BLOCKED);
+      apps[app_id - 1].state = PAUSED;
     }
   }
 
