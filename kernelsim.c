@@ -24,8 +24,8 @@ static pid_t intersim_pid;
 static proc_info_t apps[APP_AMOUNT];
 // Shared memory segment between apps and kernel
 static int *shm;
-// Represents the index of the next app to continue execution, upon receiving a
-// timeslice interrupt. Its value cycles through the apps[] array
+// Represents the index of the next app to (possibly) continue execution, upon
+// receiving a timeslice interrupt. Its value cycles through the apps[] array
 static int schedule_next_app_index = 1;
 
 // Returns the app_id of the child app with the given pid,
@@ -169,12 +169,26 @@ static void schedule_next_app(void) {
   apps[current_app_id - 1].state = PAUSED;
 
   // continue next available app
+  for (int i = 0; i < APP_AMOUNT; i++) {
+    assert(schedule_next_app_index >= 0 &&
+           schedule_next_app_index < APP_AMOUNT);
+    assert(apps[schedule_next_app_index].state !=
+           RUNNING); // no apps should be running at this point
 
-  // loop through all apps once, starting from the last, checking if they can be
-  // continued
+    if (apps[schedule_next_app_index].state == PAUSED) {
+      // found app ready to be continued
+      kill(apps[schedule_next_app_index].app_pid, SIGCONT);
+      apps[schedule_next_app_index].state = RUNNING;
 
-  // dont forget logs
-  write_msg("Kernel scheduler switched app %d for %d", current_app_id, -1);
+      write_msg("Kernel scheduler switched app %d for %d", current_app_id,
+                apps[schedule_next_app_index].app_id);
+
+      schedule_next_app_index = (schedule_next_app_index + 1) % APP_AMOUNT;
+      break;
+    }
+
+    schedule_next_app_index = (schedule_next_app_index + 1) % APP_AMOUNT;
+  }
 }
 
 int main(void) {
