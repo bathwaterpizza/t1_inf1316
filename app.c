@@ -92,6 +92,8 @@ int main(int argc, char **argv) {
   // Begin paused
   raise(SIGSTOP);
 
+  write_log("App %d running", app_id);
+
   // Main application loop
   while (counter < APP_MAX_PC) {
     usleep((APP_SLEEP_TIME_MS / 2) * 1000);
