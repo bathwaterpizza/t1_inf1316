@@ -192,7 +192,7 @@ int main(void) {
       exit(2);
     } else if (pid == 0) {
       // child
-
+      // passing shm_id and app_id as args
       char shm_id_str[10];
       char app_id_str[10];
       sprintf(shm_id_str, "%d", shm_id);
@@ -219,11 +219,24 @@ int main(void) {
   }
 
   // Spawn intersim
-  // TODO: also pass the pipe fds to it as argvs
+  intersim_pid = fork();
+  if (intersim_pid < 0) {
+    fprintf(stderr, "Fork error\n");
+    exit(2);
+  } else if (intersim_pid == 0) {
+    // child
+    // passing pipe fds as args
+    char pipe_read_str[10];
+    char pipe_write_str[10];
+    sprintf(pipe_read_str, "%d", interpipe_fd[PIPE_READ]);
+    sprintf(pipe_write_str, "%d", interpipe_fd[PIPE_WRITE]);
+
+    execlp("./intersim", "intersim", pipe_read_str, pipe_write_str, NULL);
+  }
 
   close(interpipe_fd[PIPE_WRITE]); // close write
 
-  // Wait for all app processes to boot, start intersim
+  // Wait for all processes to boot, start intersim
   sleep(1);
   kernel_running = true;
   write_log("Kernel running");
@@ -239,6 +252,7 @@ int main(void) {
   free_queue(D2_app_queue);
   shmdt(shm);
   shmctl(shm_id, IPC_RMID, NULL);
+  close(interpipe_fd[PIPE_READ]);
   write_log("Kernel finished");
 
   return 0;

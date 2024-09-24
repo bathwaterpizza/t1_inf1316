@@ -70,6 +70,7 @@ int main(int argc, char **argv) {
   counter = 0;
   write_log("App %d booting", app_id);
   assert(app_id >= 0 && app_id <= 5);
+  assert(argc == 3);
   srand(time(NULL)); // reset seed
 
   // Register signal callbacks
