@@ -121,6 +121,23 @@ static void handle_app_finished(int signum, siginfo_t *info, void *context) {
   }
 }
 
+// Called on Ctrl+C.
+// Terminate children, cleanup and exit
+static void handle_sigint(int signum) {
+  write_msg("Kernel stopping from SIGINT");
+
+  // kill all apps
+  for (int i = 0; i < APP_AMOUNT; i++) {
+    kill(apps[i].app_pid, SIGTERM);
+  }
+
+  // kill intersim
+  kill(intersim_pid, SIGTERM);
+
+  // and exit from main
+  kernel_running = false;
+}
+
 int main(void) {
   write_log("Kernel booting");
   // Validate some configs
@@ -145,6 +162,10 @@ int main(void) {
   sa_finished.sa_flags = SA_SIGINFO | SA_NOCLDSTOP;
   sa_finished.sa_sigaction = handle_app_finished;
   if (sigaction(SIGCHLD, &sa_finished, NULL) == -1) {
+    fprintf(stderr, "Signal error\n");
+    exit(4);
+  }
+  if (signal(SIGINT, handle_sigint) == SIG_ERR) {
     fprintf(stderr, "Signal error\n");
     exit(4);
   }
@@ -190,14 +211,14 @@ int main(void) {
     apps[i].state = PAUSED;
   }
 
-  // Wait for all processes to boot
+  // Wait for all app processes to boot
   sleep(1);
   kernel_running = true;
   write_log("Kernel running");
 
   // Main loop for reading interrupt pipes
   while (kernel_running) {
-    // todo
+    // TODO: read pipes, schedule apps
   }
 
   // cleanup

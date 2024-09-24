@@ -44,6 +44,14 @@ static void handle_kernel_cont(int signum) {
   }
 }
 
+// Called by parent on Ctrl+C.
+// Cleanup and exit
+static void handle_sigterm(int signum) {
+  write_log("App %d stopping from SIGTERM", app_id);
+  shmdt(shm);
+  exit(0);
+}
+
 // Sends a syscall request to kernelsim
 static void send_syscall(syscall_t call) {
   // There should be no pending syscalls
@@ -70,6 +78,10 @@ int main(int argc, char **argv) {
     exit(4);
   }
   if (signal(SIGCONT, handle_kernel_cont) == SIG_ERR) {
+    fprintf(stderr, "Signal error\n");
+    exit(4);
+  }
+  if (signal(SIGTERM, handle_sigterm) == SIG_ERR) {
     fprintf(stderr, "Signal error\n");
     exit(4);
   }
