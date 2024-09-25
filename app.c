@@ -16,6 +16,16 @@ static int counter = 0;
 // Called when app receives SIGUSR1 from kernelsim
 // Saves state in shm and raises SIGSTOP
 static void handle_kernel_stop(int signum) {
+  // Block signals
+  sigset_t mask;
+  sigemptyset(&mask);
+  sigaddset(&mask, SIGUSR1);
+  sigaddset(&mask, SIGCHLD);
+  if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0) {
+    fprintf(stderr, "Signal blocking error\n");
+    exit(9);
+  }
+
   write_msg("App %d stopped at counter %d", app_id, counter);
 
   // Save program counter state to shm
@@ -23,11 +33,27 @@ static void handle_kernel_stop(int signum) {
 
   // Wait for continue from kernelsim
   raise(SIGSTOP);
+
+  // Unblock signals
+  if (sigprocmask(SIG_UNBLOCK, &mask, NULL) < 0) {
+    fprintf(stderr, "Signal blocking error\n");
+    exit(9);
+  }
 }
 
 // Called when app receives SIGCONT from kernelsim
 // Restores state from shm
 static void handle_kernel_cont(int signum) {
+  // Block signals
+  sigset_t mask;
+  sigemptyset(&mask);
+  sigaddset(&mask, SIGUSR1);
+  sigaddset(&mask, SIGCHLD);
+  if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0) {
+    fprintf(stderr, "Signal blocking error\n");
+    exit(9);
+  }
+
   write_msg("App %d resumed at counter %d", app_id, counter);
 
   // Restore program counter state from shm
@@ -39,6 +65,12 @@ static void handle_kernel_cont(int signum) {
     write_log("App %d completed syscall: %s", app_id,
               SYSCALL_STR[get_app_syscall(shm, app_id)]);
     set_app_syscall(shm, app_id, SYSCALL_NONE);
+  }
+
+  // Unblock signals
+  if (sigprocmask(SIG_UNBLOCK, &mask, NULL) < 0) {
+    fprintf(stderr, "Signal blocking error\n");
+    exit(9);
   }
 }
 
