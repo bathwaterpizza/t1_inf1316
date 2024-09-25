@@ -16,8 +16,6 @@ static int counter = 0;
 // Called when app receives SIGUSR1 from kernelsim
 // Saves state in shm and raises SIGSTOP
 static void handle_kernel_stop(int signum) {
-  // assert(get_app_syscall(shm, app_id) == SYSCALL_NONE);
-
   write_msg("App %d stopped at counter %d", app_id, counter);
 
   // Save program counter state to shm

@@ -110,11 +110,23 @@ static void update_app_stats(syscall_t call, int app_index) {
 
 // Called when kernelsim receives a syscall from one of the apps
 static void handle_app_syscall(int signum, siginfo_t *info, void *context) {
+  // Block signals
+  sigset_t mask;
+  sigemptyset(&mask);
+  sigaddset(&mask, SIGUSR1);
+  sigaddset(&mask, SIGCHLD);
+  if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0) {
+    fprintf(stderr, "Signal blocking error\n");
+    exit(9);
+  }
+
   int app_id = pid_to_appid(info->si_pid);
   int app_index = app_id - 1;
   syscall_t call = get_app_syscall(shm, app_id);
 
-  assert(apps[app_index].state == RUNNING);
+  if (apps[app_index].state != RUNNING) {
+    write_log("WARN: Handling syscall for non-running app %d", app_id);
+  }
   assert(call != SYSCALL_NONE);
 
   // send signal to save app context, then it'll sigstop itself
@@ -129,10 +141,26 @@ static void handle_app_syscall(int signum, siginfo_t *info, void *context) {
   } else {
     enqueue(D2_app_queue, app_id);
   }
+
+  // Unblock signals
+  if (sigprocmask(SIG_UNBLOCK, &mask, NULL) < 0) {
+    fprintf(stderr, "Signal blocking error\n");
+    exit(9);
+  }
 }
 
 // Called when an app exits
 static void handle_app_finished(int signum, siginfo_t *info, void *context) {
+  // Block signals
+  sigset_t mask;
+  sigemptyset(&mask);
+  sigaddset(&mask, SIGUSR1);
+  sigaddset(&mask, SIGCHLD);
+  if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0) {
+    fprintf(stderr, "Signal blocking error\n");
+    exit(9);
+  }
+
   int app_id = pid_to_appid(info->si_pid);
   int app_index = app_id - 1;
 
@@ -148,6 +176,12 @@ static void handle_app_finished(int signum, siginfo_t *info, void *context) {
     write_msg("All apps finished, stopping kernel");
     kernel_running = false;
     kill(intersim_pid, SIGTERM);
+  }
+
+  // Unblock signals
+  if (sigprocmask(SIG_UNBLOCK, &mask, NULL) < 0) {
+    fprintf(stderr, "Signal blocking error\n");
+    exit(9);
   }
 }
 
@@ -170,19 +204,39 @@ static void handle_sigint(int signum) {
 
 // Stops the current app and looks for the next available one to continue
 static void schedule_next_app(void) {
+  // Block signals
+  // This eliminates some concurrency issues
+  // sigset_t mask;
+  // sigemptyset(&mask);
+  // sigaddset(&mask, SIGUSR1);
+  // sigaddset(&mask, SIGCHLD);
+  // if (sigprocmask(SIG_BLOCK, &mask, NULL) < 0) {
+  //   fprintf(stderr, "Signal blocking error\n");
+  //   exit(9);
+  // }
+
+  // Check if we're done
   if (all_apps_finished()) {
     // kill intersim and stop the pipe reading loop
     write_msg("All apps finished, stopping kernel");
     kernel_running = false;
     kill(intersim_pid, SIGTERM);
+
+    // // Unblock signals
+    // if (sigprocmask(SIG_UNBLOCK, &mask, NULL) < 0) {
+    //   fprintf(stderr, "Signal blocking error\n");
+    //   exit(9);
+    // }
     return;
   }
   // stop current app if there is one, and if it isn't the last one
   int current_app_id = get_running_appid();
 
-  if (current_app_id != -1 && (get_amount_finished() < (APP_AMOUNT - 1))) {
-    kill(apps[current_app_id - 1].app_pid, SIGUSR1);
+  if (current_app_id != -1 && get_amount_finished() < (APP_AMOUNT - 1) &&
+      get_app_counter(shm, current_app_id) < APP_MAX_PC) {
+    assert(apps[current_app_id - 1].state == RUNNING);
     apps[current_app_id - 1].state = PAUSED;
+    kill(apps[current_app_id - 1].app_pid, SIGUSR1);
     write_msg("Kernel scheduler stopped app %d", current_app_id);
   } else {
     write_log("Kernel scheduler found no app to stop");
@@ -192,8 +246,6 @@ static void schedule_next_app(void) {
   for (int i = 0; i < APP_AMOUNT; i++) {
     assert(schedule_next_app_index >= 0 &&
            schedule_next_app_index < APP_AMOUNT);
-    assert(apps[schedule_next_app_index].state !=
-           RUNNING); // no apps should be running at this point
 
     // Don't continue the app we just stopped
     if (schedule_next_app_index == (current_app_id - 1))
@@ -208,10 +260,21 @@ static void schedule_next_app(void) {
                 apps[schedule_next_app_index].app_id);
 
       schedule_next_app_index = (schedule_next_app_index + 1) % APP_AMOUNT;
+      // // Unblock signals
+      // if (sigprocmask(SIG_UNBLOCK, &mask, NULL) < 0) {
+      //   fprintf(stderr, "Signal blocking error\n");
+      //   exit(9);
+      // }
       return;
     }
 
     schedule_next_app_index = (schedule_next_app_index + 1) % APP_AMOUNT;
+
+    // // Unblock signals
+    // if (sigprocmask(SIG_UNBLOCK, &mask, NULL) < 0) {
+    //   fprintf(stderr, "Signal blocking error\n");
+    //   exit(9);
+    // }
   }
 
   // If we get here, it means there was no app to continue
@@ -220,6 +283,7 @@ static void schedule_next_app(void) {
 
 int main(void) {
   srand(time(NULL));
+  write_log("\n\n----------------------------------------------------");
   write_log("Kernel booting");
   // Validate some configs
   assert(APP_AMOUNT >= 3 && APP_AMOUNT <= 5);
@@ -344,6 +408,9 @@ int main(void) {
 
       if (app_id == -1)
         continue; // queue is empty
+
+      write_log("Kernel unblocking app %d at state %s", app_id,
+                PROC_STATE_STR[apps[app_id - 1].state]);
 
       assert(apps[app_id - 1].state == BLOCKED);
       apps[app_id - 1].state = PAUSED;
