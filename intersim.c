@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
     irq_t irq = IRQ_TIME;
     write(interpipe_fd[PIPE_WRITE], &irq, sizeof(irq_t));
 
-    write_log("Intersim sent timeslice interrupt");
+    write_log("Intersim sent time interrupt");
 
     // Randomly send D1 and D2 interrupts
     if (rand() % 100 < INTERSIM_D1_INT_PROB) {
